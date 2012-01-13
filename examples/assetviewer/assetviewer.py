@@ -29,9 +29,13 @@ class Frame(wx.Frame):
 if __name__=="__main__":
     import sys
     import os
-    if len(sys.argv)!=3:
+    import codecs
+    sys.stdout = codecs.lookup('utf_8')[-1](sys.stdout)
+    if len(sys.argv)<2:
         print '''
 usage:
+    %s {asset}
+or
     %s {asset} {model relative path from asset} 
 
 {asset} should be directory or zip archive.  
@@ -43,7 +47,29 @@ usage:
         print 'fail to get asset'
         sys.exit(1)
 
-    model=glbase.load_model(asset, sys.argv[2].decode('cp932'))
+    if len(sys.argv)<3:
+        # specify asset entry
+        entries=asset.get_entries(lambda e: glbase.asset.loadable(e))
+        if len(entries)==0:
+            print 'no loadable entry'
+            sys.exit(1)
+        elif len(entries)==1:
+            index=0
+        else:
+            print '[select entry]'
+            for i, e in enumerate(entries):
+                print i, e.get_name()
+            print '?'
+            sys.stdout.flush()
+            try:
+                index=int(raw_input(''))
+            except ValueError as e:
+                index=0
+        entry_string=entries[index].__str__()
+    else:
+        entry_string=asset, sys.argv[2].decode('cp932')
+
+    model=glbase.load_model(asset, entry_string)
     if not model:
         print 'fail to load model'
         sys.exit(2)
