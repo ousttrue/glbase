@@ -1,4 +1,5 @@
 # coding: utf-8
+import os
 import io
 import time
 import glbase.scene
@@ -37,6 +38,9 @@ def pmd_build(asset, entry_string):
         for i in model.indices:
             yield i
     indexGen=indices()
+    dirname=os.path.dirname(entry_string)
+    if len(dirname)>0:
+        dirname+=u"/"
     for i, m in enumerate(model.materials):
         material=glbase.material.MQOMaterial()
         material.vcol=True
@@ -46,11 +50,15 @@ def pmd_build(asset, entry_string):
                 m.diffuse_color[2], 
                 m.alpha)
         texturefile=m.texture_file.decode('cp932')
-        if len(texturefile)>0 and asset.is_exist(texturefile):
-            if not texturefile in textureMap:
-                texture=glbase.texture.Texture(asset, texturefile)
-                textureMap[texturefile]=texture
-            material.texture=textureMap[texturefile]
+        if len(texturefile)>0:
+            texturefile=u"%s%s" % (dirname, texturefile)
+            if asset.is_exist(texturefile):
+                if not texturefile in textureMap:
+                    texture=glbase.texture.Texture(asset, texturefile)
+                    textureMap[texturefile]=texture
+                material.texture=textureMap[texturefile]
+            else:
+                print 'no such entry', texturefile
         indices=indexedVertexArray.addMaterial(material)
         indices+=[next(indexGen) for n in range(m.vertex_count)]
     indexedVertexArray.optimize()
