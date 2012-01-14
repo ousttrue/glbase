@@ -49,7 +49,7 @@ or
 
     if len(sys.argv)<3:
         # specify asset entry
-        entries=asset.get_entries(lambda e: glbase.asset.loadable(e))
+        entries=asset.get_entries(lambda asset, entry: glbase.asset.loadable(asset, entry))
         if len(entries)==0:
             print 'no loadable entry'
             sys.exit(1)
@@ -58,14 +58,14 @@ or
         else:
             print '[select entry]'
             for i, e in enumerate(entries):
-                print i, e.get_name()
+                print i, e
             print '?'
             sys.stdout.flush()
             try:
                 index=int(raw_input(''))
             except ValueError as e:
                 index=0
-        entry_string=entries[index].__str__()
+        entry_string=entries[index]
     else:
         entry_string=asset, sys.argv[2].decode('cp932')
 
