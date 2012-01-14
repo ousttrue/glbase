@@ -26,6 +26,47 @@ class Frame(wx.Frame):
         sizer.Add(self.glwidget, 1, wx.EXPAND)
 
 
+def selector(entries):
+    print '[select entry]'
+    for i, e in enumerate(entries):
+        print i, e
+    print '?'
+    sys.stdout.flush()
+    try:
+        index=int(raw_input(''))
+    except ValueError as e:
+        index=0
+    return index
+
+
+def load_model(argv):
+    asset=glbase.get_asset(argv[1].decode('cp932'))
+    if not asset:
+        print 'fail to get asset'
+        return
+
+    if len(argv)<3:
+        # specify asset entry
+        entries=asset.get_entries(lambda asset, entry: glbase.asset.loadable(asset, entry))
+        if len(entries)==0:
+            print 'no loadable entry'
+            return
+        elif len(entries)==1:
+            index=0
+        else:
+            index=selector(entries)
+        entry_string=entries[index]
+    else:
+        entry_string=asset, argv[2].decode('cp932')
+
+    model=glbase.load_model(asset, entry_string)
+    if not model:
+        print 'fail to load model'
+        return
+
+    return model
+
+
 if __name__=="__main__":
     import sys
     import os
@@ -42,37 +83,9 @@ or
 ''' % os.path.dirname(sys.argv[0])
         sys.exit(0)
 
-    asset=glbase.get_asset(sys.argv[1].decode('cp932'))
-    if not asset:
-        print 'fail to get asset'
-        sys.exit(1)
-
-    if len(sys.argv)<3:
-        # specify asset entry
-        entries=asset.get_entries(lambda asset, entry: glbase.asset.loadable(asset, entry))
-        if len(entries)==0:
-            print 'no loadable entry'
-            sys.exit(1)
-        elif len(entries)==1:
-            index=0
-        else:
-            print '[select entry]'
-            for i, e in enumerate(entries):
-                print i, e
-            print '?'
-            sys.stdout.flush()
-            try:
-                index=int(raw_input(''))
-            except ValueError as e:
-                index=0
-        entry_string=entries[index]
-    else:
-        entry_string=asset, sys.argv[2].decode('cp932')
-
-    model=glbase.load_model(asset, entry_string)
+    model=load_model(sys.argv)
     if not model:
-        print 'fail to load model'
-        sys.exit(2)
+        sys.exit(1)
 
     app = wx.App(False)
     frame=Frame(None)

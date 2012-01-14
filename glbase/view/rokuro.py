@@ -57,8 +57,8 @@ class RokuroView(baseview.BaseView):
 
     def updateView(self):
         glTranslate(self.shiftX, self.shiftY, -self.distance)
-        glRotate(self.head, 0, 1, 0)
         glRotate(self.pitch, 1, 0, 0)
+        glRotate(self.head, 0, 1, 0)
 
     def onMotion(self, x, y):
         redraw=False
