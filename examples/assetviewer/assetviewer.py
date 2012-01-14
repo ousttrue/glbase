@@ -3,6 +3,7 @@
 """
 wxPython asset viewer 
 """
+import zipfile
 import wx
 import glbase
 import glbase.view
@@ -40,12 +41,19 @@ def selector(entries):
 
 
 def load_model(argv):
-    asset=glbase.get_asset(argv[1].decode('cp932'))
+    if not os.path.isdir(argv[0]) and not zipfile.is_zipfile(argv[0]):
+        assert(len(argv)==1)
+        argv=[
+                os.path.dirname(argv[0]), 
+                os.path.basename(argv[0]), 
+                ]
+
+    asset=glbase.get_asset(argv[0].decode('cp932'))
     if not asset:
         print 'fail to get asset'
         return
 
-    if len(argv)<3:
+    if len(argv)<2:
         # specify asset entry
         entries=asset.get_entries(lambda asset, entry: glbase.asset.loadable(asset, entry))
         if len(entries)==0:
@@ -57,7 +65,7 @@ def load_model(argv):
             index=selector(entries)
         entry_string=entries[index]
     else:
-        entry_string=asset, argv[2].decode('cp932')
+        entry_string=argv[1].decode('cp932')
 
     model=glbase.load_model(asset, entry_string)
     if not model:
@@ -72,18 +80,21 @@ if __name__=="__main__":
     import os
     import codecs
     sys.stdout = codecs.lookup('utf_8')[-1](sys.stdout)
+    name=os.path.basename(sys.argv[0])
     if len(sys.argv)<2:
         print '''
 usage:
+    %s {model}
+or
     %s {asset}
 or
     %s {asset} {model relative path from asset} 
 
 {asset} should be directory or zip archive.  
-''' % os.path.dirname(sys.argv[0])
+''' % (name, name, name)
         sys.exit(0)
 
-    model=load_model(sys.argv)
+    model=load_model(sys.argv[1:])
     if not model:
         sys.exit(1)
 
