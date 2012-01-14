@@ -58,6 +58,15 @@ zipfile.ZipInfo=ZipInfo
 
 
 ##############################################################################
+def dirname(path_string):
+    spos=path_string.rfind(u'/')
+    bspos=path_string.rfind(u'\\')
+    pos=spos>bspos and spos or bspos
+    if pos==-1:
+        return u''
+    return path_string[:pos]
+
+
 def get_extension(path_string):
     pos=path_string.rfind(u'.')
     if pos!=-1:
