@@ -3,10 +3,9 @@
 
 import math
 import numpy
-from OpenGL.GL import *
-from OpenGL.GLU import *
-
+import glbase.matrix
 from . import baseview
+
 
 class RokuroView(baseview.BaseView):
     def __init__(self):
@@ -45,22 +44,6 @@ class RokuroView(baseview.BaseView):
         self.head+=head
         self.pitch+=pitch
 
-    def draw(self):
-        mode=glGetInteger(GL_MATRIX_MODE)
-        glMatrixMode(GL_PROJECTION)
-        self.updateProjection()
-        glMatrixMode(GL_MODELVIEW)
-        self.updateView()
-        glMatrixMode(mode)
-
-    def updateProjection(self):
-        gluPerspective(30, self.aspect, self.n, self.f)
-
-    def updateView(self):
-        glTranslate(self.shiftX, self.shiftY, -self.distance)
-        glRotate(self.pitch, 1, 0, 0)
-        glRotate(self.head, 0, 1, 0)
-
     def onMotion(self, x, y):
         redraw=False
         if self.isLeftDown:
@@ -96,8 +79,11 @@ class RokuroView(baseview.BaseView):
         print(self)
 
     def get_matrix(self):
-        m=numpy.identity(4, 'f')
-        m[0][3]=self.shiftX
-        m[1][3]=self.shiftY
+        v=glbase.matrix.get_euler(self.head, self.pitch, 0)
+        v[0][3]=self.shiftX
+        v[1][3]=self.shiftY
+        v[2][3]=-self.distance
+        p=glbase.matrix.get_persepective(30, self.aspect, self.n, self.f)
+        m=numpy.dot(p, v)
         return m
 
