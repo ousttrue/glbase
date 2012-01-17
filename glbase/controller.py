@@ -2,7 +2,41 @@
 """
 """
 import re
+import os
+import zipfile
 from OpenGL.GL import *
+import glbase
+
+
+def load_model(argv):
+    if not os.path.isdir(argv[0]) and not zipfile.is_zipfile(argv[0]):
+        assert(len(argv)==1)
+        argv=[
+                os.path.dirname(argv[0]), 
+                os.path.basename(argv[0]), 
+                ]
+    print 'load_model', argv
+    asset=glbase.get_asset(argv[0].decode('cp932'))
+    if not asset:
+        print 'fail to get asset'
+        return
+
+    if len(argv)<2:
+        # specify asset entry
+        entries=asset.get_entries(lambda asset, entry: glbase.asset.loadable(asset, entry))
+        if len(entries)==0:
+            print 'no loadable entry'
+            return
+        elif len(entries)==1:
+            index=0
+        else:
+            index=selector(entries)
+        entry_string=entries[index]
+    else:
+        entry_string=argv[1].decode('cp932')
+
+    print entry_string
+    return glbase.load_model(asset, entry_string)
 
 
 class Empty(object):
@@ -71,19 +105,24 @@ class Controller(object):
         self.view.onResize()
         glEnable(GL_DEPTH_TEST)
         glClearColor(*self.bg)
+        model=load_model(self.initial_model)
+        assert model
+        self.root=model
+        self.is_initialized=True
 
     def draw(self):
         if not self.is_initialized:
             self.initilaize()
-            self.is_initialized=True
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
+        #glMatrixMode(GL_PROJECTION)
+        #glLoadIdentity()
+        #glMatrixMode(GL_MODELVIEW)
+        #glLoadIdentity()
 
-        self.view.draw()
+        self.root.shader.set_uniform(
+                u_model_matrix=self.view.get_matrix()
+                )
         self.root.draw()
 
         glFlush()

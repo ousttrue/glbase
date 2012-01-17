@@ -13,4 +13,6 @@ def load_model(asset, entry_string):
         return pmdbuilder.build(asset, entry_string)
     elif extension==u'.pmx':
         return pmxbuilder.build(asset, entry_string)
+    else:
+        print 'unknown type', asset, entry_string, extension
 

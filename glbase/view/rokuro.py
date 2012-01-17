@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import math
+import numpy
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
@@ -93,4 +94,10 @@ class RokuroView(baseview.BaseView):
         self.shiftX=-cx/2.0
         self.shiftY=-cy/2.0
         print(self)
+
+    def get_matrix(self):
+        m=numpy.identity(4, 'f')
+        m[0][3]=self.shiftX
+        m[1][3]=self.shiftY
+        return m
 

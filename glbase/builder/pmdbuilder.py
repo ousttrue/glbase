@@ -5,7 +5,42 @@ import time
 import glbase.scene
 import glbase.material
 import glbase.texture
+import glbase.shader
 import pymeshio.pmd.reader
+
+
+VS='''
+attribute vec3 a_position;
+//attribute vec4 a_color;
+//attribute vec2 a_texCoord;
+//varying vec4 v_color;
+//varying vec2 v_texCoord;
+uniform mat4 u_model_matrix;
+//uniform sampler2D s_texture;
+
+void main()
+{
+    gl_Position = u_model_matrix * vec4(a_position.x, a_position.y, a_position.z, 1.0);
+    //v_color=a_color;
+    //v_texCoord=a_texCoord;
+}                
+
+'''
+
+
+FS='''
+//varying vec4 v_color;
+//varying vec2 v_texCoord;
+//uniform mat4 u_model_matrix;
+uniform sampler2D s_texture;
+
+void main()
+{
+    //gl_FragColor = texture2D(s_texture, gl_PointCoord);
+    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+}
+'''
+
 
 def build(asset, entry_string):
     t=time.time()
@@ -19,6 +54,20 @@ def build(asset, entry_string):
     if not model:
         return
     d=time.time()-t
+
+    drawable=glbase.shader.VertexArray(
+            vs=VS,
+            fs=FS,
+            indices=model.indices,
+            vertex_count=len(model.vertices),
+            attributes=[
+                glbase.shader.AttributeArray("a_position", [n 
+                    for v in model.vertices
+                    for n in (v.pos[0], v.pos[1], -v.pos[2])
+                    ])
+                ]
+            )
+    return drawable
 
     # build
     indexedVertexArray=glbase.scene.IndexedVertexArray()

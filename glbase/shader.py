@@ -174,7 +174,8 @@ class AttributeArray(object):
 
 
 class VertexArray(object):
-    def __init__(self, mode, vs, fs, indices, vertex_count, attributes, point_size=None):
+    def __init__(self, vs, fs, indices, vertex_count, attributes, 
+            mode=GL_TRIANGLES, point_size=None):
         self.mode=mode
         self.point_size=point_size
         for array in attributes:

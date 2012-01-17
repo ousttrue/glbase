@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import numpy
 from OpenGL.GL import *
+
 
 class BaseView(object):
     def __init__(self):
@@ -12,6 +14,7 @@ class BaseView(object):
         self.isLeftDown=False
         self.isMiddelDown=False
         self.isRightDown=False
+        self.matrix=numpy.identity(4, 'f')
 
     def draw(self):
         pass
@@ -53,4 +56,7 @@ class BaseView(object):
         print(m[1][0], m[1][1], m[1][2], m[1][3])
         print(m[2][0], m[2][1], m[2][2], m[2][3])
         print(m[3][0], m[3][1], m[3][2], m[3][3])
+
+    def get_matrix(self):
+        return self.matrix
 
