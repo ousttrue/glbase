@@ -24,6 +24,7 @@ class Material(object):
         glAlphaFunc(GL_GREATER, 0.5);
 
         # texture begin
+        texture_map={}
         for i, (texture, unit) in enumerate(zip(self.textures, [
             GL_TEXTURE0,
             GL_TEXTURE1,
@@ -35,8 +36,9 @@ class Material(object):
             GL_TEXTURE7
             ])):
             glActiveTexture(unit)
-            shader.set_uniform(s_texture=[i])
             texture.begin()
+            texture_map['s_texture%d' % i]=[i]
+        shader.set_uniform(**texture_map)
         # uniform variable
         shader.set_uniform(**self.uniform_map)
 

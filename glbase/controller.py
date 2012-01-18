@@ -28,12 +28,12 @@ void main()
 
 FS='''
 varying vec2 v_texCoord;
-uniform sampler2D s_texture;
+uniform sampler2D s_texture0;
 uniform vec4 u_color;
 
 void main()
 {
-    vec4 tex=texture2D(s_texture, v_texCoord);
+    vec4 tex=texture2D(s_texture0, v_texCoord);
     float inv=1.0-tex.a;
     gl_FragColor=vec4(
         tex.r*tex.a+u_color.r*inv,
