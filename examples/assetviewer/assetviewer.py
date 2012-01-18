@@ -63,7 +63,7 @@ or
     frame=Frame(None)
 
     frame.controller.set_view(glbase.view.RokuroView())
-    frame.controller.initial_model=sys.argv[1:]
+    frame.controller.load_model(*sys.argv[1:])
     def callback(keycode):
         if keycode==81: # q
             frame.Destroy()

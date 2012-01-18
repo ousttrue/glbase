@@ -3,40 +3,39 @@
 """
 import re
 import os
-import zipfile
 from OpenGL.GL import *
 import glbase
 
 
-def load_model(argv):
-    if not os.path.isdir(argv[0]) and not zipfile.is_zipfile(argv[0]):
-        assert(len(argv)==1)
-        argv=[
-                os.path.dirname(argv[0]), 
-                os.path.basename(argv[0]), 
-                ]
-    print 'load_model', argv
-    asset=glbase.get_asset(argv[0].decode('cp932'))
-    if not asset:
-        print 'fail to get asset'
-        return
+VS='''
+attribute vec3 a_position;
+//attribute vec3 a_normal;
+//attribute vec2 a_texCoord;
+//attribute vec3 a_skinning;
+//varying vec3 v_normal;
+//varying vec2 v_texCoord;
+uniform mat4 u_pv_matrix;
 
-    if len(argv)<2:
-        # specify asset entry
-        entries=asset.get_entries(lambda asset, entry: glbase.asset.loadable(asset, entry))
-        if len(entries)==0:
-            print 'no loadable entry'
-            return
-        elif len(entries)==1:
-            index=0
-        else:
-            index=selector(entries)
-        entry_string=entries[index]
-    else:
-        entry_string=argv[1].decode('cp932')
+void main()
+{
+    gl_Position = u_pv_matrix * vec4(a_position.x, a_position.y, a_position.z, 1.0);
+    //v_normal=a_normal;
+    //v_texCoord=a_texCoord;
+}                
 
-    print entry_string
-    return glbase.load_model(asset, entry_string)
+'''
+
+
+FS='''
+//varying vec2 v_texCoord;
+//uniform sampler2D s_texture;
+
+void main()
+{
+    //gl_FragColor = texture2D(s_texture, v_texCoord);
+    gl_FragColor=vec4(1.0, 1.0, 1.0, 1.0);
+}
+'''
 
 
 class Empty(object):
@@ -55,6 +54,7 @@ class Controller(object):
         self.is_initialized=False
 
     def onResize(self, w, h):
+        self.view.set_size(w, h)
         glViewport(0, 0, w, h)
 
     def onLeftDown(self, x, y):
@@ -101,29 +101,29 @@ class Controller(object):
                 method = getattr(to, name)  
                 setattr(self, name, method)
 
+    def load_model(self, asset_path, entry=None):
+        if entry:
+            asset=glbase.get_asset(asset_path.decode('cp932'))
+            entry_string=entry.decode('cp932')
+        else:
+            asset=glbase.get_asset(os.path.dirname(asset_path).decode('cp932'))
+            entry_string=os.path.basename(asset_path).decode('cp932')
+        self.root=glbase.load_model(asset, entry_string)
+
     def initilaize(self):
-        self.view.onResize()
         glEnable(GL_DEPTH_TEST)
         glClearColor(*self.bg)
-        model=load_model(self.initial_model)
-        assert model
-        self.root=model
+        self.shader=glbase.shader.Program(VS, FS)
+        self.view.onInitialize()
+        self.root.onInitialize()
         self.is_initialized=True
 
     def draw(self):
         if not self.is_initialized:
             self.initilaize()
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        #glMatrixMode(GL_PROJECTION)
-        #glLoadIdentity()
-        #glMatrixMode(GL_MODELVIEW)
-        #glLoadIdentity()
-
-        self.root.shader.set_uniform(
-                u_model_matrix=self.view.get_matrix()
-                )
-        self.root.draw()
-
+        with self.shader as s:
+            self.view.onShader(s)
+            self.root.onShader(s)
         glFlush()
 

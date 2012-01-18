@@ -1,180 +1,80 @@
 #!/usr/bin/python
 # coding: utf-8
-
-from OpenGL.GL import *
 import numpy
-
-'''
-頂点配列
-
-====
-属性
-====
-* 位置
-'''
-class VertexArray(object):
-    def __init__(self, vertices):
-        self.vertices=vertices
-
-    def __str__(self):
-        return "<VertexArray %d>" % len(self.vertices)
-
-    def draw(self):
-        # 位置属性
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 0, self.vertices)
-        # 描画
-        glDrawArrays(GL_TRIANGLES, 0, len(self.vertices))
-        # 後始末
-        glDisableClientState(GL_VERTEX_ARRAY)
+import ctypes
+from OpenGL.GL import *
 
 
+def create_vbo(type, array):
+    vbo=glGenBuffers(1)
+    glBindBuffer(type, vbo)
+    glBufferData(type, array, GL_STATIC_DRAW)
+    return vbo
 
-'''
-頂点配列
 
-====
-属性
-====
-* 位置
-* UV
-'''
-class VertexArrayWithUV(object):
-    def __init__(self, vertices, uvarray):
-        self.vertices=vertices
-        self.uvarray=uvarray
+class AttributeArray(object):
+    def __init__(self, name, data=None):
+        self.name=name
+        self.data=data or []
+        self.element_count=None
 
-    def __str__(self):
-        return "<VertexArrayWithUV %d>" % len(self.vertices)
+    def push(self, *args):
+        for arg in args:
+            self.data.append(arg)
 
-    def draw(self):
-        # 位置属性
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 0, self.vertices)
-        # UV属性
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-        glTexCoordPointer(2, GL_FLOAT, 0, self.uvarray)
-        # 描画
-        triangle_count=int(len(self.vertices)/3)
-        glDrawArrays(GL_TRIANGLES, 0, triangle_count)
-        # 後始末
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
-        glDisableClientState(GL_VERTEX_ARRAY)
 
-    def get_boundingbox(self):
-        vertices_size=len(self.vertices)
-        if(vertices_size==0):
-            return ([0, 0, 0], [0, 0, 0])
-        def vertex_gen_factory():
-            for i in range(0, vertices_size, 3):
-                yield [
-                        self.vertices[i],
-                        self.vertices[i+1],
-                        self.vertices[i+2]
-                        ]
-        vertex_gen=vertex_gen_factory()
-        v=next(vertex_gen)
-        max_v=v[:]
-        min_v=v[:]
-        for v in vertex_gen:
-            min_v[0]=min(min_v[0], v[0]) 
-            min_v[1]=min(min_v[1], v[1]) 
-            min_v[2]=min(min_v[2], v[2]) 
-            max_v[0]=max(max_v[0], v[0]) 
-            max_v[1]=max(max_v[1], v[1]) 
-            max_v[2]=max(max_v[2], v[2]) 
-        return (min_v, max_v)
-
-'''
-インデックス参照頂点配列
-
-====
-属性
-====
-* 位置
-* UV
-'''
 class IndexedVertexArray(object):
-    def __init__(self):
-        # vertices
-        self.vertices=[]
-        self.normal=[]
-        self.colors=[]
-        self.uvlist=[]
-        self.b0=[]
-        self.b1=[]
-        self.w0=[]
-        # indices
+    def __init__(self, indices, vertex_count, *attributes):
+        self.indices=indices
+        self.vertex_count=vertex_count
+        self.attributes=attributes
+        for array in self.attributes:
+            array.element_count=len(array.data)/self.vertex_count
         self.materials=[]
-        self.indicesMap={}
 
-    def addVertex(self, pos, normal, uv, color, b0, b1, w0):
-        self.vertices+=pos
-        self.normal+=normal
-        self.colors+=color
-        self.uvlist+=uv
-        self.b0.append(b0)
-        self.b1.append(b1)
-        self.w0.append(w0)
+    def onInitialize(self):
+        # as float
+        interleave_count=sum([len(array.data)/self.vertex_count 
+            for array in self.attributes])
+        stride=interleave_count*4
 
-    def addMaterial(self, material):
-        self.materials.append(material)
-        indices=[]
-        self.indicesMap[material]=indices
-        return indices
+        # vbo
+        self.interleave=numpy.zeros(self.vertex_count * interleave_count, numpy.float32)
+        arrayiters=[(array, iter(array.data)) for array in self.attributes]
+        pos=0
+        for i in range(self.vertex_count):
+            for array, it in arrayiters:
+                for j in range(array.element_count):
+                    self.interleave[pos]=it.next()
+                    pos+=1
+        assert pos==len(self.interleave)
+        self.vbo=create_vbo(GL_ARRAY_BUFFER, self.interleave)
 
-    def draw(self):
-        # 位置属性
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(4, GL_FLOAT, 0, self.vertices)
-        # UV属性
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-        glTexCoordPointer(2, GL_FLOAT, 0, self.uvlist)
-        # マテリアル毎の描画
-        for m in self.materials:
-            m.begin()
-            # 順序維持
-            indices=self.indicesMap[m]
-            # indexによる描画
-            glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, indices)
-            m.end()
-        # 後始末
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
-        glDisableClientState(GL_VERTEX_ARRAY)
+        # index vbo
+        self.indices_vbo=create_vbo(GL_ELEMENT_ARRAY_BUFFER, 
+                numpy.array(self.indices, numpy.uint))
+        self.indices_count=len(self.indices)
 
-    def optimize(self):
-        self.vertices=numpy.array(self.vertices, numpy.float32) 
-        self.uvlist=numpy.array(self.uvlist, numpy.float32) 
-        for m, indices in self.indicesMap.items():
-            self.indicesMap[m]=numpy.array(indices, numpy.uint32)
+        # shader params
+        shader_params=[]
+        offset=0
+        for array in self.attributes:
+            shader_params.append((array.name, (self.vbo, stride, offset)))
+            offset+=array.element_count*4
+        self.shader_params=dict(shader_params)
 
-    def get_boundingbox(self):
-        vertices_size=len(self.vertices)
-        if(vertices_size==0):
-            return ([0, 0, 0], [0, 0, 0])
-        def vertex_gen_factory():
-            for i in range(0, vertices_size, 4):
-                yield [
-                        self.vertices[i],
-                        self.vertices[i+1],
-                        self.vertices[i+2]
-                        ]
-        vertex_gen=vertex_gen_factory()
-        v=next(vertex_gen)
-        max_v=v[:]
-        min_v=v[:]
-        for v in vertex_gen:
-            if v[0]<min_v[0]:
-                min_v[0]=v[0]
-            if v[1]<min_v[1]:
-                min_v[1]=v[1]
-            if v[2]<min_v[2]:
-                min_v[2]=v[2]
-            if v[0]>max_v[0]:
-                max_v[0]=v[0]
-            if v[1]>max_v[1]:
-                max_v[1]=v[1]
-            if v[2]>max_v[2]:
-                max_v[2]=v[2]
-        return (min_v, max_v)
+    def onShader(self, shader):
+        # set attribute variable
+        shader.set_attribute(**self.shader_params)
+        # draw elements
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.indices_vbo)
+
+        glDrawElements(GL_TRIANGLES, self.indices_count, GL_UNSIGNED_INT, None)
+        """
+        offset=0
+        for material in self.materials:
+            glDrawElements(self.mode, self.indices_count, GL_UNSIGNED_INT, 
+                    ctypes.c_void_p(offset));
+            offset+=material.offset
+        """
 

@@ -1,3 +1,4 @@
+# coding: utf-8
 import ctypes
 import sys
 import re
@@ -13,12 +14,7 @@ class Variable(object):
 
 
 class Attribute(Variable):
-    def create_attacher(self, program):
-        index=glGetAttribLocation(program, self.name)
-        if index==-1:
-            print 'fail to get index for %s' % self.name
-            assert(False)
-        #print self.name, index
+    def create_attacher(self, index):
         if self.type=='vec2':
             size=2
         elif self.type=='vec3':
@@ -33,31 +29,31 @@ class Attribute(Variable):
             glVertexAttribPointer(index, size, GL_FLOAT, GL_FALSE, 
                     stride, ctypes.c_void_p(offset))
             glEnableVertexAttribArray(index)
-        attach.index=index
         return self.name, attach
+
+    def get_index(self, program):
+        return glGetAttribLocation(program, self.name)
 
 
 class Uniform(Variable):
-    def create_attacher(self, program):
-        index=glGetUniformLocation(program, self.name)
-        assert(index>=0)
-        #print self.name, index
+    def create_attacher(self, index):
         if self.type=='mat4':
             def attach(data):
                 data = (ctypes.c_float*16)(*[n 
                     for row in data
                     for n in row])
                 glUniformMatrix4fv(index, 1, GL_TRUE, data)
-            attach.index=index
             return self.name, attach
         elif self.type=='sampler2D':
             def attach(data):
                 glUniform1i(index, data)
-            attach.index=index
             return self.name, attach
         else:
             print 'unknown type', self.type
             assert False
+
+    def get_index(self, program):
+        return glGetUniformLocation(program, self.name)
 
 
 class Shader(object):
@@ -133,9 +129,11 @@ class Program(object):
         self.log()
         glLinkProgram(self.program)
         self.log()
-        attach_map=[arg.create_attacher(self.program) 
-            for arg in parse(vs_src)]
-        self.attach_map=dict(attach_map)
+        self.index_map={}
+        self.attach_map=dict([arg.create_attacher(self.get_index(arg)) 
+            for arg in parse(vs_src)])
+        self.attach_map.update(dict([arg.create_attacher(self.get_index(arg)) 
+            for arg in parse(fs_src)]))
 
     def log(self):
         length=glGetProgramiv(self.program, GL_INFO_LOG_LENGTH)
@@ -143,8 +141,14 @@ class Program(object):
             print ' ERROR: ', length, glGetProgramInfoLog(self.program)
             sys.exit()
 
-    def get_index(self, name):
-        return self.attach_map[name].index
+    def get_index(self, arg):
+        if arg.name not in self.index_map:
+            index=arg.get_index(self.program)
+            if index==-1:
+                print 'fail to get index for %s' % arg.name
+                assert(False)
+            self.index_map[arg.name]=index
+        return self.index_map[arg.name]
 
     def set_texture(self, **kwargs):
         for k, v in kwargs.items():
@@ -156,14 +160,28 @@ class Program(object):
                 assert False
 
     def set_uniform(self, **kwargs):
-        glUseProgram(self.program)
         for k, v in kwargs.items():
             self.attach_map[k](v)
 
-    def draw(self, **kwargs):
-        glUseProgram(self.program)
+    def set_attribute(self, **kwargs):
         for k, v in kwargs.items():
             self.attach_map[k](*v)
+
+    def begin(self):
+        #print 'begin', self.program
+        glUseProgram(self.program)
+
+    def end(self):
+        #print 'end', self.program
+        glUseProgram(0)
+
+    def __enter__(self):
+        self.begin()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.end()
+        return False
 
 
 class AttributeArray(object):
@@ -223,4 +241,49 @@ class VertexArray(object):
             glEnable(GL_POINT_SPRITE);
             glPointSize(self.point_size)
         glDrawElements(self.mode, self.indices_count, GL_UNSIGNED_INT, None);
+
+
+'''
+Material
+
+* 色
+* テクスチャー
+'''
+class UniformSupplier(object):
+    def __init__(self):
+        self.uniform_map={}
+        self.textures=[]
+        self.offset=0
+
+    def __enter__(self):
+        self.begin()
+
+    def __exit__(self):
+        self.end()
+
+    def set(self, **kwargs):
+        for k, v in kwargs.items():
+            self.uniform_map[k]=v
+
+    def begin(self):
+        glColor4f(*self.rgba)
+        if self.texture:
+            self.texture.begin()
+
+        # backface culling
+        glEnable(GL_CULL_FACE)
+        glFrontFace(GL_CW)
+        glCullFace(GL_BACK)
+        # alpha test
+        glEnable(GL_ALPHA_TEST);
+        glAlphaFunc(GL_GREATER, 0.5);
+
+    def end(self):
+        if self.texture:
+            self.texture.end()
+
+    def onInitialize(self):
+        pass
+        #if self.texture:
+        #    self.texture.onInitialize()
 

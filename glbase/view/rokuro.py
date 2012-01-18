@@ -26,8 +26,8 @@ class RokuroView(baseview.BaseView):
         return '<RokuroView shiftX: %f, shiftY: %f, distance: %f>' % (
                 self.shiftX, self.shiftY, self.distance)
  
-    def onResize(self, w=None, h=None):
-        super(RokuroView, self).onResize(w, h)
+    def set_size(self, w=None, h=None):
+        super(RokuroView, self).set_size(w, h)
         self.aspect=float(self.w)/float(self.h)
 
     def dolly(self, d):

@@ -69,3 +69,8 @@ class Texture(object):
     def end(self):
         glDisable(GL_TEXTURE_2D)
 
+
+    @staticmethod
+    def get_from_path(path):
+        return None
+

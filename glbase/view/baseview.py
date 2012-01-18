@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 import numpy
-from OpenGL.GL import *
 
 
 class BaseView(object):
@@ -16,13 +14,9 @@ class BaseView(object):
         self.isRightDown=False
         self.matrix=numpy.identity(4, 'f')
 
-    def draw(self):
-        pass
-
-    def onResize(self, w=None, h=None):
+    def set_size(self, w=None, h=None):
         self.w=w or self.w
         self.h=h or self.h
-        glViewport(0, 0, self.w, self.h)
 
     def onLeftDown(self, x, y):
         self.isLeftDown=True
@@ -51,12 +45,14 @@ class BaseView(object):
     def onMotion(self, x, y):
         print("onMotion", x, y)
 
-    def printMatrix(self, m):
-        print(m[0][0], m[0][1], m[0][2], m[0][3])
-        print(m[1][0], m[1][1], m[1][2], m[1][3])
-        print(m[2][0], m[2][1], m[2][2], m[2][3])
-        print(m[3][0], m[3][1], m[3][2], m[3][3])
+    def onInitialize(self):
+        pass
 
     def get_matrix(self):
         return self.matrix
+
+    def onShader(self, shader):
+        shader.set_uniform(
+                u_pv_matrix=self.get_matrix()
+                )
 
