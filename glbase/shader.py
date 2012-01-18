@@ -287,3 +287,4 @@ class UniformSupplier(object):
         #if self.texture:
         #    self.texture.onInitialize()
 
+

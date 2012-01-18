@@ -51,9 +51,10 @@ class IndexedVertexArray(object):
         self.vbo=create_vbo(GL_ARRAY_BUFFER, self.interleave)
 
         # index vbo
-        self.indices_vbo=create_vbo(GL_ELEMENT_ARRAY_BUFFER, 
-                numpy.array(self.indices, numpy.uint))
-        self.indices_count=len(self.indices)
+        for material in self.materials:
+            material.indices_vbo=create_vbo(GL_ELEMENT_ARRAY_BUFFER, 
+                    numpy.array(material.indices, numpy.uint))
+            material.indices_count=len(material.indices)
 
         # shader params
         shader_params=[]
@@ -67,14 +68,8 @@ class IndexedVertexArray(object):
         # set attribute variable
         shader.set_attribute(**self.shader_params)
         # draw elements
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.indices_vbo)
-
-        glDrawElements(GL_TRIANGLES, self.indices_count, GL_UNSIGNED_INT, None)
-        """
-        offset=0
+        #glDrawElements(GL_TRIANGLES, self.indices_count, GL_UNSIGNED_INT, None)
         for material in self.materials:
-            glDrawElements(self.mode, self.indices_count, GL_UNSIGNED_INT, 
-                    ctypes.c_void_p(offset));
-            offset+=material.offset
-        """
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, material.indices_vbo)
+            glDrawElements(GL_TRIANGLES, len(material.indices), GL_UNSIGNED_INT, None);
 

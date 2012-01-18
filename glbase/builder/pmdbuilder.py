@@ -40,6 +40,10 @@ def build(asset, entry_string):
     # material
     textureMap={}
     dirname=os.path.dirname(entry_string)
+    def indexGen():
+        for i in model.indices:
+            yield i
+    indexGen=indexGen()
     for i, m in enumerate(model.materials):
         material=glbase.shader.UniformSupplier()
         material.set(u_color=(
@@ -57,7 +61,7 @@ def build(asset, entry_string):
                 material.textures.append(textureMap[texturefile])
             else:
                 print 'no such entry', texturefile
-        material.offset=m.vertex_count
+        material.indices=[indexGen.next() for _ in range(m.vertex_count)]
         indexedVertexArray.materials.append(material)
     return indexedVertexArray
 
