@@ -24,14 +24,23 @@ class Material(object):
         glAlphaFunc(GL_GREATER, 0.5);
 
         # texture begin
-        if len(self.textures)>0:
-            glActiveTexture(GL_TEXTURE0)
-            shader.set_uniform(s_texture=[0])
-            self.textures[0].begin()
+        for i, (texture, unit) in enumerate(zip(self.textures, [
+            GL_TEXTURE0,
+            GL_TEXTURE1,
+            GL_TEXTURE2,
+            GL_TEXTURE3,
+            GL_TEXTURE4,
+            GL_TEXTURE5,
+            GL_TEXTURE6,
+            GL_TEXTURE7
+            ])):
+            glActiveTexture(unit)
+            shader.set_uniform(s_texture=[i])
+            texture.begin()
         # uniform variable
         shader.set_uniform(**self.uniform_map)
 
     def end(self, shader):
-        if len(self.textures)>0:
-            self.textures[0].end()
+        for texture in self.textures:
+            texture.end()
 

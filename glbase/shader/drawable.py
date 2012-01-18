@@ -66,7 +66,6 @@ class IndexedVertexArray(object):
         # set attribute variable
         shader.set_attribute(**self.shader_params)
         # draw elements
-        #glDrawElements(GL_TRIANGLES, self.indices_count, GL_UNSIGNED_INT, None)
         for material, (vbo, index_count) in zip(self.materials, self.indices):
             # material begin
             material.begin(shader)
@@ -75,3 +74,4 @@ class IndexedVertexArray(object):
             glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, None);
             # material end
             material.end(shader)
+
