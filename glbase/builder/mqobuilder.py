@@ -1,30 +1,40 @@
-#!/usr/bin/env python
 # coding: utf-8
-
-import time
 import os
-import pymeshio.mqo.reader
-import glbase.material
+import io
+import time
 import glbase.texture
-import glbase.scene.vertexarraymap
+import glbase.shader
+import pymeshio.mqo.reader
 
 
-def build(path):
-    t=time.time()
+class Material(object):
+    def __init__(self):
+        pass
+
+
+class VertexArray(object):
+    def __init__(self):
+        self.materials=[]
+
+    def addTriangle(self, material_index,
+            v0, v1, v2,
+            uv0, uv1, uv2
+            ):
+        pass
+
+
+def build(asset, entry_string):
+    # load
     model=pymeshio.mqo.reader.read_from_file(path)
     if not model:
         return
-    print(time.time()-t, "sec")
+
     # build
-    basedir=os.path.dirname(path)
-    vertexArrayMap=glbase.scene.vertexarraymap.VertexArrayMapWithUV()
-    for m in model.materials:
-        material=glbase.material.MQOMaterial()
-        material.rgba=(m.color.r, m.color.g, m.color.b, m.color.a)
-        if m.tex:
-            texturepath=os.path.join(basedir, m.tex.decode('cp932'))
-            material.texture=glbase.texture.Texture(texturepath)
-        vertexArrayMap.addMaterial(material)
+    vertexArray=VertexArray()
+    vertexArray.materials=[
+            Material(m.color.r, m.color.g, m.color.b, m.color.a, 
+                m.tex and m.tex.decode('cp932') or None)
+            for m in model.materials]
 
     for o in model.objects:
         # skip mikoto objects
@@ -37,7 +47,7 @@ def build(path):
 
         for f in o.faces:
             if f.index_count==3:
-                vertexArrayMap.addTriangle(
+                vertexArray.addTriangle(
                         f.material_index,
                         o.vertices[f.indices[0]],
                         o.vertices[f.indices[1]],
@@ -46,7 +56,7 @@ def build(path):
                         )
             elif f.index_count==4:
                 # triangle 1
-                vertexArrayMap.addTriangle(
+                vertexArray.addTriangle(
                         f.material_index,
                         o.vertices[f.indices[0]],
                         o.vertices[f.indices[1]],
@@ -54,7 +64,7 @@ def build(path):
                         f.uv[0], f.uv[1], f.uv[2]
                         )
                 # triangle 2
-                vertexArrayMap.addTriangle(
+                vertexArray.addTriangle(
                         f.material_index,
                         o.vertices[f.indices[2]],
                         o.vertices[f.indices[3]],
@@ -62,6 +72,23 @@ def build(path):
                         f.uv[2], f.uv[3], f.uv[0]
                         )
 
-    vertexArrayMap.optimize()
-    return vertexArrayMap
+    """ ToDo
+    # attributes
+    position=glbase.shader.AttributeArray('a_position')
+    normal=glbase.shader.AttributeArray('a_normal')
+    uv=glbase.shader.AttributeArray('a_texCoord')
+    for v in model.vertices:
+        # left-handed y-up to right-handed y-up                
+        position.push(v.pos[0], v.pos[1], -v.pos[2])
+        normal.push(v.normal[0], v.normal[1], -v.normal[2])
+        uv.push(v.uv[0], v.uv[1])
+        skinning.push(v.bone0, v.bone1, v.weight0)
+    indexedVertexArray=glbase.shader.IndexedVertexArray(model.indices, len(model.vertices),
+            position, 
+            normal, 
+            uv, 
+            #skinning
+            )
+     basedir=os.path.dirname(path)
+     """
 

@@ -21,6 +21,7 @@ class RokuroView(baseview.BaseView):
         self.aspect=1
         self.n=1
         self.f=10000
+        self.fovy=30
 
     def __str__(self):
         return '<RokuroView shiftX: %f, shiftY: %f, distance: %f>' % (
@@ -83,7 +84,7 @@ class RokuroView(baseview.BaseView):
         v[0][3]=self.shiftX
         v[1][3]=self.shiftY
         v[2][3]=-self.distance
-        p=glbase.matrix.get_persepective(30, self.aspect, self.n, self.f)
+        p=glbase.matrix.get_persepective(self.fovy, self.aspect, self.n, self.f)
         m=numpy.dot(p, v)
         return m
 
