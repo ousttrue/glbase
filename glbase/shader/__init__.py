@@ -57,14 +57,17 @@ def parse(src):
     vars=[]
     for s in no_comment.split(';'):
         splited=s.split()
-        if len(splited)!=3:
+        #if len(splited)!=3:
+        #    break
+        splited=[e.strip() for e in splited]
+        kind=splited[0]
+        if kind=='void':
             break
-        kind, type, name=[e.strip() for e in splited]
-        if kind=='attribute':
-            vars.append(Attribute(type, name))
+        elif kind=='attribute':
+            vars.append(Attribute(*splited[1:]))
         elif kind=='uniform':
-            vars.append(Uniform(type, name))
-        elif kind=='varying':
+            vars.append(Uniform(*splited[1:]))
+        elif kind=='varying' or kind=='const':
             pass
         else:
             print 'unknown kind', kind

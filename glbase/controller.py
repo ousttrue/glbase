@@ -8,19 +8,22 @@ import glbase
 
 
 VS='''
+const vec3 light_direction=vec3(0.0, -1.0, 0.0);
 attribute vec3 a_position;
-//attribute vec3 a_normal;
+attribute vec3 a_normal;
 attribute vec2 a_texCoord;
 //attribute vec3 a_skinning;
+uniform mat4 u_pv_matrix;
 //varying vec3 v_normal;
 varying vec2 v_texCoord;
-uniform mat4 u_pv_matrix;
+varying float v_light_power;
 
 void main()
 {
     gl_Position = u_pv_matrix * vec4(a_position.x, a_position.y, a_position.z, 1.0);
     //v_normal=a_normal;
     v_texCoord=a_texCoord;
+    v_light_power=0.5+0.5*max(0.0, -dot(light_direction, a_normal));
 }                
 
 '''
@@ -28,6 +31,7 @@ void main()
 
 FS='''
 varying vec2 v_texCoord;
+varying float v_light_power;
 uniform sampler2D s_texture0;
 uniform vec4 u_color;
 
@@ -36,10 +40,12 @@ void main()
     vec4 tex=texture2D(s_texture0, v_texCoord);
     float inv=1.0-tex.a;
     gl_FragColor=vec4(
+        vec3(
         tex.r*tex.a+u_color.r*inv,
         tex.g*tex.a+u_color.g*inv,
-        tex.b*tex.a+u_color.b*inv,
-        1);
+        tex.b*tex.a+u_color.b*inv
+        )*v_light_power,
+        tex.a+u_color.a);
 }
 '''
 

@@ -30,7 +30,7 @@ def build(asset, entry_string):
         skinning.push(v.bone0, v.bone1, v.weight0)
     indexedVertexArray=glbase.shader.IndexedVertexArray(model.indices, len(model.vertices),
             position, 
-            #normal, 
+            normal, 
             uv, 
             #skinning
             )
