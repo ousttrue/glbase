@@ -38,6 +38,8 @@ def build(asset, entry_string):
     # material
     textureMap={}
     dirname=os.path.dirname(entry_string)
+    if len(dirname)>0:
+        dirname+=u"/"
     def indexGen():
         for i in model.indices:
             yield i

@@ -1,69 +1,53 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import time
 import os
 import io
-import pymeshio.pmx.reader
-import glbase.asset
-import glbase.material
 import glbase.texture
-import glbase.scene.vertexarray
+import glbase.shader
+import pymeshio.pmx.reader
 
 
 def build(asset, entry_string):
-    t=time.time()
+    # load
     model=pymeshio.pmx.reader.read(io.BytesIO(asset.get(entry_string)))
     if not model:
         return
-    print(time.time()-t, "sec")
+
     # build
-    indexedVertexArray=glbase.scene.vertexarray.IndexedVertexArray()
+    position=glbase.shader.AttributeArray('a_position')
+    normal=glbase.shader.AttributeArray('a_normal')
+    uv=glbase.shader.AttributeArray('a_texCoord')
+    skinning=glbase.shader.AttributeArray('a_skinning')
     for v in model.vertices:
         # left-handed y-up to right-handed y-up                
-        if v.deform.__class__ is pymeshio.pmx.Bdef1:
-            indexedVertexArray.addVertex(
-                    (v.position[0], v.position[1], -v.position[2], 1), 
-                    (v.normal[0], v.normal[1], -v.normal[2]), 
-                    (v.uv[0], v.uv[1]), 
-                    (1, 1, 1, 1),
-                    v.deform.index0, 0, 1.0)
-        elif v.deform.__class__ is pymeshio.pmx.Bdef2:
-            indexedVertexArray.addVertex(
-                    (v.position[0], v.position[1], -v.position[2], 1), 
-                    (v.normal[0], v.normal[1], -v.normal[2]), 
-                    (v.uv[0], v.uv[1]), 
-                    (1, 1, 1, 1),
-                    v.deform.index0, v.deform.index1, v.deform.weight0)
-        elif v.deform.__class__ is pymeshio.pmx.Sdef:
-            indexedVertexArray.addVertex(
-                    (v.position[0], v.position[1], -v.position[2], 1), 
-                    (v.normal[0], v.normal[1], -v.normal[2]), 
-                    (v.uv[0], v.uv[1]), 
-                    (1, 1, 1, 1),
-                    v.deform.index0, v.deform.index1, v.deform.weight0)
-        else:
-            print("unknown deform: {0}".format(v.deform))
-    
+        position.push(v.position[0], v.position[1], -v.position[2])
+        normal.push(v.normal[0], v.normal[1], -v.normal[2])
+        uv.push(v.uv[0], v.uv[1])
+        #skinning.push(v.bone0, v.bone1, v.weight0)
+    indexedVertexArray=glbase.shader.IndexedVertexArray(model.indices, len(model.vertices),
+            position, 
+            normal, 
+            uv, 
+            #skinning
+            )
+
     # material
     textureMap={}
-    faceIndex=0
-    def indices():
-        for i in model.indices:
-            yield i
-    indexGen=indices()
-    #dirname=glbase.asset.dirname(entry_string)
     dirname=os.path.dirname(entry_string)
     if len(dirname)>0:
         dirname+=u"/"
+    def indexGen():
+        for i in model.indices:
+            yield i
+    indexGen=indexGen()
     for i, m in enumerate(model.materials):
-        material=glbase.material.MQOMaterial()
-        material.vcol=True
-        material.rgba=(
+        material=glbase.shader.Material()
+        material.set(u_color=(
                 m.diffuse_color[0], 
                 m.diffuse_color[1], 
                 m.diffuse_color[2], 
-                m.alpha)
+                m.alpha))
         if m.texture_index!=255:
             texturepath=u'%s%s' % (dirname, model.textures[m.texture_index].decode('cp932'))
             texturepath=texturepath.replace(u'\\', '/')
@@ -74,8 +58,8 @@ def build(asset, entry_string):
                 material.texture=textureMap[texturepath]
             else:
                 print 'no suche entry', texturepath
-        indices=indexedVertexArray.addMaterial(material)
-        indices+=[next(indexGen) for n in range(m.vertex_count)]
-    indexedVertexArray.optimize()
+        material.indices=[indexGen.next() for _ in range(m.vertex_count)]
+        indexedVertexArray.materials.append(material)
+
     return indexedVertexArray
 
