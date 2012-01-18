@@ -2,8 +2,6 @@
 import os
 import io
 import time
-import glbase.scene
-import glbase.material
 import glbase.texture
 import glbase.shader
 import pymeshio.pmd.reader
@@ -20,17 +18,17 @@ def build(asset, entry_string):
         return
 
     # attributes
-    position=glbase.scene.AttributeArray('a_position')
-    normal=glbase.scene.AttributeArray('a_normal')
-    uv=glbase.scene.AttributeArray('a_texCoord')
-    skinning=glbase.scene.AttributeArray('a_skinning')
+    position=glbase.shader.AttributeArray('a_position')
+    normal=glbase.shader.AttributeArray('a_normal')
+    uv=glbase.shader.AttributeArray('a_texCoord')
+    skinning=glbase.shader.AttributeArray('a_skinning')
     for v in model.vertices:
         # left-handed y-up to right-handed y-up                
         position.push(v.pos[0], v.pos[1], -v.pos[2])
         normal.push(v.normal[0], v.normal[1], -v.normal[2])
         uv.push(v.uv[0], v.uv[1])
         skinning.push(v.bone0, v.bone1, v.weight0)
-    indexedVertexArray=glbase.scene.IndexedVertexArray(model.indices, len(model.vertices),
+    indexedVertexArray=glbase.shader.IndexedVertexArray(model.indices, len(model.vertices),
             position, 
             #normal, 
             #uv, 

@@ -53,6 +53,6 @@ class BaseView(object):
 
     def onShader(self, shader):
         shader.set_uniform(
-                u_pv_matrix=self.get_matrix()
+                u_pv_matrix=[self.get_matrix()]
                 )
 

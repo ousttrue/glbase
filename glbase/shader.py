@@ -37,7 +37,22 @@ class Attribute(Variable):
 
 class Uniform(Variable):
     def create_attacher(self, index):
-        if self.type=='mat4':
+        if self.type=='vec2':
+            size=2
+            def attach(x, y):
+                glUniform2f(index, x, y)
+            return self.name, attach
+        elif self.type=='vec3':
+            size=3
+            def attach(x, y, z):
+                glUniform3f(index, x, y, z)
+            return self.name, attach
+        elif self.type=='vec4':
+            size=4
+            def attach(x, y, z, w):
+                glUniform4f(index, x, y, z, w)
+            return self.name, attach
+        elif self.type=='mat4':
             def attach(data):
                 data = (ctypes.c_float*16)(*[n 
                     for row in data
@@ -161,7 +176,7 @@ class Program(object):
 
     def set_uniform(self, **kwargs):
         for k, v in kwargs.items():
-            self.attach_map[k](v)
+            self.attach_map[k](*v)
 
     def set_attribute(self, **kwargs):
         for k, v in kwargs.items():
@@ -181,95 +196,109 @@ class Program(object):
 
     def __exit__(self, type, value, traceback):
         self.end()
-        return False
+
+
+def create_vbo(type, array):
+    vbo=glGenBuffers(1)
+    glBindBuffer(type, vbo)
+    glBufferData(type, array, GL_STATIC_DRAW)
+    return vbo
 
 
 class AttributeArray(object):
-    def __init__(self, name, data):
+    def __init__(self, name, data=None):
         self.name=name
-        self.data=data
+        self.data=data or []
         self.element_count=None
 
+    def push(self, *args):
+        for arg in args:
+            self.data.append(arg)
 
-class VertexArray(object):
-    def __init__(self, vs, fs, indices, vertex_count, attributes, 
-            mode=GL_TRIANGLES, point_size=None):
-        self.mode=mode
-        self.point_size=point_size
-        for array in attributes:
-            array.element_count=len(array.data)/vertex_count
-        self.shader=Program(vs, fs)
+
+class IndexedVertexArray(object):
+    def __init__(self, indices, vertex_count, *attributes):
+        self.indices=indices
+        self.vertex_count=vertex_count
+        self.attributes=attributes
+        for array in self.attributes:
+            array.element_count=len(array.data)/self.vertex_count
+        self.materials=[]
+
+    def onInitialize(self):
         # as float
-        interleave_count=sum([len(array.data)/vertex_count for array in attributes])
+        interleave_count=sum([len(array.data)/self.vertex_count 
+            for array in self.attributes])
         stride=interleave_count*4
 
         # vbo
-        self.interleave=numpy.zeros(vertex_count * interleave_count, numpy.float32)
-        arrayiters=[(array, iter(array.data)) for array in attributes]
+        self.interleave=numpy.zeros(self.vertex_count * interleave_count, numpy.float32)
+        arrayiters=[(array, iter(array.data)) for array in self.attributes]
         pos=0
-        for i in range(vertex_count):
+        for i in range(self.vertex_count):
             for array, it in arrayiters:
                 for j in range(array.element_count):
                     self.interleave[pos]=it.next()
                     pos+=1
         assert pos==len(self.interleave)
-        self.vbo=self.create_vbo(GL_ARRAY_BUFFER, self.interleave)
+        self.vbo=create_vbo(GL_ARRAY_BUFFER, self.interleave)
 
         # index vbo
-        self.indices_vbo=self.create_vbo(GL_ELEMENT_ARRAY_BUFFER, 
-                numpy.array(indices, numpy.uint))
-        self.indices_count=len(indices)
+        for material in self.materials:
+            material.onInitialize()
 
         # shader params
         shader_params=[]
         offset=0
-        for array in attributes:
+        for array in self.attributes:
             shader_params.append((array.name, (self.vbo, stride, offset)))
             offset+=array.element_count*4
         self.shader_params=dict(shader_params)
 
-    def create_vbo(self, type, array):
-        vbo=glGenBuffers(1)
-        glBindBuffer(type, vbo)
-        glBufferData(type, array, GL_STATIC_DRAW)
-        return vbo
-
-    def draw(self):
-        self.shader.draw(**self.shader_params)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.indices_vbo)
-        if self.point_size:
-            glEnable(GL_POINT_SPRITE);
-            glPointSize(self.point_size)
-        glDrawElements(self.mode, self.indices_count, GL_UNSIGNED_INT, None);
+    def onShader(self, shader):
+        # set attribute variable
+        shader.set_attribute(**self.shader_params)
+        # draw elements
+        #glDrawElements(GL_TRIANGLES, self.indices_count, GL_UNSIGNED_INT, None)
+        for material in self.materials:
+            with material as m:
+                m.onShader(shader)
 
 
-'''
-Material
-
-* 色
-* テクスチャー
-'''
 class UniformSupplier(object):
     def __init__(self):
         self.uniform_map={}
         self.textures=[]
         self.offset=0
 
-    def __enter__(self):
-        self.begin()
-
-    def __exit__(self):
-        self.end()
-
     def set(self, **kwargs):
         for k, v in kwargs.items():
             self.uniform_map[k]=v
 
-    def begin(self):
-        glColor4f(*self.rgba)
-        if self.texture:
-            self.texture.begin()
+    def onInitialize(self):
+        for texture in self.textures:
+            texture.onInitialize()
 
+        self.indices_vbo=create_vbo(GL_ELEMENT_ARRAY_BUFFER, 
+                numpy.array(self.indices, numpy.uint))
+        self.indices_count=len(self.indices)
+
+    def begin(self):
+        for texture in self.textures:
+            texture.begin()
+
+    def end(self):
+        for texture in self.textures:
+            texture.end()
+
+    def __enter__(self):
+        self.begin()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.end()
+
+    def onShader(self, shader):
         # backface culling
         glEnable(GL_CULL_FACE)
         glFrontFace(GL_CW)
@@ -277,14 +306,9 @@ class UniformSupplier(object):
         # alpha test
         glEnable(GL_ALPHA_TEST);
         glAlphaFunc(GL_GREATER, 0.5);
-
-    def end(self):
-        if self.texture:
-            self.texture.end()
-
-    def onInitialize(self):
-        pass
-        #if self.texture:
-        #    self.texture.onInitialize()
-
+        # uniform variable
+        shader.set_uniform(**self.uniform_map)
+        # draw element
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.indices_vbo)
+        glDrawElements(GL_TRIANGLES, len(self.indices), GL_UNSIGNED_INT, None);
 
