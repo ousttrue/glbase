@@ -1,6 +1,9 @@
 import numpy
 import math
 
+def to_radian(degree):
+    return degree/180.0*math.pi
+
 def get_persepective(fovy, aspect, near, far):
     f=math.atan(float(fovy)/2.0)
     return numpy.array([
@@ -9,9 +12,6 @@ def get_persepective(fovy, aspect, near, far):
         [0, 0, float(far+near)/float(near-far), float(2*far*near)/float(near-far)],
         [0, 0, -1.0, 0]
         ], 'f')
-
-def to_radian(degree):
-    return degree/180.0*math.pi
 
 def get_euler(h, p ,b):
     sh=math.sin(to_radian(h))
@@ -26,5 +26,4 @@ def get_euler(h, p ,b):
         [-sh*cb+ch*sp*sb, sb*sh+ch*sp*cb, ch*cp, 0],
         [0, 0, 0, 1]
         ], 'f')
-
 

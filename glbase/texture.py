@@ -1,13 +1,9 @@
-#!/usr/bin/python
-# coding: utf-8
-
 import io
 from PIL import Image
 from OpenGL.GL import *
 
 
 class Texture(object):
-
     def __init__(self, asset, entry_string):
         self.asset=asset
         self.entry_string=entry_string
@@ -18,12 +14,12 @@ class Texture(object):
     def onInitialize(self):
         self.isInitialized=False
 
-    def createTexture(self):
+    def _createTexture(self):
         self.id=glGenTextures(1)
         if self.id==0:
             print("fail to glGenTextures")
             return False
-        print("createTexture: %d" % self.id)
+        print("_createTexture: %d" % self.id)
 
         channels=len(self.image.getbands())
         w, h=self.image.size
@@ -56,7 +52,7 @@ class Texture(object):
                         return
                 # createTexture
                 if self.image:
-                    self.createTexture()
+                    self._createTexture()
             except Exception as e:
                 print(e)
                 return
@@ -70,9 +66,4 @@ class Texture(object):
     def end(self):
         glBindTexture(GL_TEXTURE_2D, 0);
         glDisable(GL_TEXTURE_2D)
-
-
-    @staticmethod
-    def get_from_path(path):
-        return None
 

@@ -43,7 +43,7 @@ def build(asset, entry_string):
             yield i
     indexGen=indexGen()
     for i, m in enumerate(model.materials):
-        material=glbase.shader.UniformSupplier()
+        material=glbase.shader.Material()
         material.set(u_color=(
             m.diffuse_color[0], 
             m.diffuse_color[1], 
