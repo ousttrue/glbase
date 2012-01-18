@@ -8,11 +8,11 @@ import glbase
 
 
 VS='''
-const vec3 light_direction=vec3(0.0, -1.0, 0.0);
 attribute vec3 a_position;
 attribute vec3 a_normal;
 attribute vec2 a_texCoord;
 //attribute vec3 a_skinning;
+uniform vec3 light_direction;
 uniform mat4 u_pv_matrix;
 //varying vec3 v_normal;
 varying vec2 v_texCoord;
@@ -135,6 +135,9 @@ class Controller(object):
             self.initilaize()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         with self.shader as s:
+            s.set_uniform(
+                    light_direction=[0.0, -1.0, 0.0]
+                    )
             self.view.onShader(s)
             self.root.onShader(s)
         glFlush()
