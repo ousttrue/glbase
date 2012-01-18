@@ -10,31 +10,36 @@ import glbase
 VS='''
 attribute vec3 a_position;
 //attribute vec3 a_normal;
-//attribute vec2 a_texCoord;
+attribute vec2 a_texCoord;
 //attribute vec3 a_skinning;
 //varying vec3 v_normal;
-//varying vec2 v_texCoord;
+varying vec2 v_texCoord;
 uniform mat4 u_pv_matrix;
 
 void main()
 {
     gl_Position = u_pv_matrix * vec4(a_position.x, a_position.y, a_position.z, 1.0);
     //v_normal=a_normal;
-    //v_texCoord=a_texCoord;
+    v_texCoord=a_texCoord;
 }                
 
 '''
 
 
 FS='''
-//varying vec2 v_texCoord;
-//uniform sampler2D s_texture;
+varying vec2 v_texCoord;
+uniform sampler2D s_texture;
 uniform vec4 u_color;
 
 void main()
 {
-    //gl_FragColor = texture2D(s_texture, v_texCoord);
-    gl_FragColor=u_color;
+    vec4 tex=texture2D(s_texture, v_texCoord);
+    float inv=1.0-tex.a;
+    gl_FragColor=vec4(
+        tex.r*tex.a+u_color.r*inv,
+        tex.g*tex.a+u_color.g*inv,
+        tex.b*tex.a+u_color.b*inv,
+        1);
 }
 '''
 

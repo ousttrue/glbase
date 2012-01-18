@@ -31,7 +31,7 @@ def build(asset, entry_string):
     indexedVertexArray=glbase.shader.IndexedVertexArray(model.indices, len(model.vertices),
             position, 
             #normal, 
-            #uv, 
+            uv, 
             #skinning
             )
    

@@ -176,7 +176,10 @@ class Program(object):
 
     def set_uniform(self, **kwargs):
         for k, v in kwargs.items():
-            self.attach_map[k](*v)
+            try:
+                self.attach_map[k](*v)
+            except KeyError as e:
+                print e
 
     def set_attribute(self, **kwargs):
         for k, v in kwargs.items():
@@ -261,8 +264,7 @@ class IndexedVertexArray(object):
         # draw elements
         #glDrawElements(GL_TRIANGLES, self.indices_count, GL_UNSIGNED_INT, None)
         for material in self.materials:
-            with material as m:
-                m.onShader(shader)
+            material.onShader(shader)
 
 
 class UniformSupplier(object):
@@ -283,22 +285,12 @@ class UniformSupplier(object):
                 numpy.array(self.indices, numpy.uint))
         self.indices_count=len(self.indices)
 
-    def begin(self):
-        for texture in self.textures:
-            texture.begin()
-
-    def end(self):
-        for texture in self.textures:
-            texture.end()
-
-    def __enter__(self):
-        self.begin()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.end()
-
     def onShader(self, shader):
+        if len(self.textures)>0:
+            glActiveTexture(GL_TEXTURE0)
+            shader.set_uniform(s_texture=[0])
+            self.textures[0].begin()
+
         # backface culling
         glEnable(GL_CULL_FACE)
         glFrontFace(GL_CW)
@@ -311,4 +303,7 @@ class UniformSupplier(object):
         # draw element
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.indices_vbo)
         glDrawElements(GL_TRIANGLES, len(self.indices), GL_UNSIGNED_INT, None);
+
+        if len(self.textures)>0:
+            self.textures[0].end()
 
