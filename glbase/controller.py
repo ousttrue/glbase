@@ -55,6 +55,12 @@ class Empty(object):
     def draw(self):
         pass
 
+    def onInitialize(self):
+        pass
+
+    def onShader(self, shader):
+        pass
+
     def get_matrix(self):
         return numpy.identity(4, 'f')
 

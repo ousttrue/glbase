@@ -1,6 +1,6 @@
 # coding: utf-8
 import zipfile
-from . import IAsset
+from .iasset import IAsset
 
 
 '''

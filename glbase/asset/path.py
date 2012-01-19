@@ -1,18 +1,35 @@
 import os
 import re
+import string
+import zipfile
+from ctypes import windll
 
 
-def has_drive(path):
-    return re.match('''^[a-zA-Z]:''', path)
+def get_drives():
+    drives = []
+    bitmask = windll.kernel32.GetLogicalDrives()
+    for letter in string.uppercase:
+        if bitmask & 1:
+            drives.append(letter.decode('ascii'))
+        bitmask >>= 1
+    return drives
 
 
 class Path(object):
     def __init__(self, path_string):
         path_string=os.path.normpath(path_string)
-        if not has_drive(path_string):
+        m=re.match('''^([a-zA-Z]):''', path_string)
+        if m:
+            pass
+        else:
+            # no drive
             path_string=os.path.abspath(path_string)
+        # set drive
+        m=re.match('''^([a-zA-Z]):''', path_string)
+        self.drive=m.group(1).upper()
+
         self.name=os.path.basename(path_string)
-        self.path_string=path_string
+        self.path_string=path_string.replace(u'\\', u'/')
 
     def __str__(self):
         return self.path_string
@@ -36,10 +53,35 @@ class Path(object):
         return Path(os.path.join(self.path_string), relative)
 
     def get_children(self):
-        return os.listdir(self.path_string)
+        return [Path(e) for e in os.listdir(self.path_string)]
 
     def get_extension(self):
         pos=self.path_string.rfind(u'.')
         if pos!=-1:
             return self.path_string[pos:].lower()
+
+    def get_drive(self):
+        return self.drive
+
+    def get_append(self, e):
+        m=re.match('''^([a-zA-Z]):$''', self.path_string)
+        if m:
+            return Path(u'%s/%s' % (self.path_string, e))
+        else:
+            return Path(os.path.join(self.path_string, e))
+
+    def from_root(self):
+        from . import get_asset
+        current=None
+        for e in self.path_string.split(u'/'):
+            if current:
+                current=current.get_append(e)
+            else:
+                current=Path(e)
+            yield current
+
+    @staticmethod
+    def pwd():
+        path=os.path.abspath('.')
+        return Path(path.decode('utf-8'))
 
