@@ -7,6 +7,20 @@ import glbase.matrix
 from . import baseview
 
 
+class PerspectiveProjection(object):
+    def __init__(self):
+        self.aspect=1
+        self.n=1
+        self.f=10000
+        self.fovy=30
+
+    def set_size(self, w, h):
+        self.aspect=float(w)/float(h)
+
+    def get_matrix(self):
+        return glbase.matrix.get_persepective(self.fovy, self.aspect, self.n, self.f)
+
+
 class RokuroView(baseview.BaseView):
     def __init__(self):
         super(RokuroView, self).__init__()
@@ -18,18 +32,14 @@ class RokuroView(baseview.BaseView):
         self.distance=100
         self.shiftX=0
         self.shiftY=0
-        self.aspect=1
-        self.n=1
-        self.f=10000
-        self.fovy=30
+        self.projection=PerspectiveProjection()
 
     def __str__(self):
         return '<RokuroView shiftX: %f, shiftY: %f, distance: %f>' % (
                 self.shiftX, self.shiftY, self.distance)
  
     def set_size(self, w=None, h=None):
-        super(RokuroView, self).set_size(w, h)
-        self.aspect=float(self.w)/float(self.h)
+        self.projection.set_size(w, h)
 
     def dolly(self, d):
         if d>0:
@@ -84,7 +94,7 @@ class RokuroView(baseview.BaseView):
         v[0][3]=self.shiftX
         v[1][3]=self.shiftY
         v[2][3]=-self.distance
-        p=glbase.matrix.get_persepective(self.fovy, self.aspect, self.n, self.f)
+        p=self.projection.get_matrix()
         m=numpy.dot(p, v)
         return m
 

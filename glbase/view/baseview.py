@@ -7,16 +7,10 @@ class BaseView(object):
     def __init__(self):
         self.x=0
         self.y=0
-        self.w=1
-        self.h=1
         self.isLeftDown=False
         self.isMiddelDown=False
         self.isRightDown=False
         self.matrix=numpy.identity(4, 'f')
-
-    def set_size(self, w=None, h=None):
-        self.w=w or self.w
-        self.h=h or self.h
 
     def onLeftDown(self, x, y):
         self.isLeftDown=True
