@@ -53,7 +53,7 @@ class Path(object):
         return Path(os.path.join(self.path_string), relative)
 
     def get_children(self):
-        return [Path(e) for e in os.listdir(self.path_string)]
+        return [self.get_append(e) for e in os.listdir(self.path_string)]
 
     def get_extension(self):
         pos=self.path_string.rfind(u'.')
@@ -73,6 +73,8 @@ class Path(object):
     def from_root(self):
         current=None
         for e in self.path_string.split(u'/'):
+            if e==u'':
+                continue
             if not current:
                 # drive
                 current=Path(u'%s/' % e)

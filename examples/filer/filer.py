@@ -213,6 +213,7 @@ class FileList(wx.ListCtrl):
     def OnItemActivated(self, event):
         self.currentItem = event.m_itemIndex
         path=self.files[event.m_itemIndex]
+        print 'OnItemActivated', path
         if path.is_dir():
             self.GetEventHandler().ProcessEvent(ChdirEvent(path))
         elif path.is_zipfile():
@@ -232,14 +233,14 @@ class FileList(wx.ListCtrl):
         return self.files[item].get_name()
 
     def OnGetItemImage(self, item):
-        target=self.files[item]
-        extension=target.get_extension()
+        path=self.files[item]
+        extension=path.get_extension()
         if extension:
             if not extension in self.extension_map:
                 icon=self.extension_to_bitmap(extension.encode('ascii'))
                 self.extension_map[extension]=icon
             return self.extension_map[extension]
-        elif target.is_dir():
+        elif path.is_dir():
             return self.id_dir
         else:
             return self.id_file
