@@ -64,7 +64,17 @@ or
 
     frame.controller.set_projection(glbase.view.PerspectiveProjection())
     frame.controller.set_view(glbase.view.RokuroView())
-    frame.controller.load_model(*sys.argv[1:])
+
+    argv=[arg.decode('cp932') for arg in sys.argv[1:]]
+    if len(argv)==1:
+        asset=glbase.asset.get_asset(argv[0])
+        entry_string=os.path.basename(argv[0])
+    else:
+        asset=glbase.asset.get_asset(argv[0])
+        entry_string=argv[1]
+
+    frame.controller.load_model(asset, entry_string)
+
     def callback(keycode):
         if keycode==81: # q
             frame.Destroy()
