@@ -213,7 +213,6 @@ class FileList(wx.ListCtrl):
     def OnItemActivated(self, event):
         self.currentItem = event.m_itemIndex
         path=self.files[event.m_itemIndex]
-        print 'OnItemActivated', path
         if path.is_dir():
             self.GetEventHandler().ProcessEvent(ChdirEvent(path))
         elif path.is_zipfile():
@@ -263,6 +262,7 @@ class Viewer(wx.Panel):
     def OnView(self, event):
         path=event.path
         print 'OnView', path.__str__().encode('utf-8')
+        self.controller.load_model(path.__str__())
         self.Refresh()
 
 

@@ -51,6 +51,14 @@ void main()
 '''
 
 
+def to_unicode(src):
+    if not src:
+        return
+    if isinstance(src, unicode):
+        return src
+    return src.decode('cp932')
+
+
 class Empty(object):
     def draw(self):
         pass
@@ -130,13 +138,16 @@ class Controller(object):
                 setattr(self, name, method)
 
     def load_model(self, asset_path, entry=None):
+        asset_path=to_unicode(asset_path)
+        entry=to_unicode(entry)
         if entry:
-            asset=glbase.get_asset(asset_path.decode('cp932'))
-            entry_string=entry.decode('cp932')
+            asset=glbase.get_asset(asset_path)
+            entry_string=entry
         else:
-            asset=glbase.get_asset(os.path.dirname(asset_path).decode('cp932'))
-            entry_string=os.path.basename(asset_path).decode('cp932')
+            asset=glbase.get_asset(os.path.dirname(asset_path))
+            entry_string=os.path.basename(asset_path)
         self.root=glbase.load_model(asset, entry_string)
+        self.is_initialized=False
 
     def initilaize(self):
         glEnable(GL_DEPTH_TEST)
