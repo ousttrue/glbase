@@ -2,6 +2,7 @@
 import zipfile
 import sys
 from .iasset import IAsset
+from .ientry import IEntry
 from .path import Path
 
 
@@ -56,9 +57,13 @@ class ZipInfo(zipfile.ZipInfo):
 zipfile.ZipInfo=ZipInfo
 
 
-class ZipEntry(object):
-    def __init__(self, entry_string):
-        self.entry_string=entry_string
+class ZipEntry(IEntry):
+    def __init__(self, asset, entry_string):
+        self.asset=asset
+        super(ZipEntry, self).__init__(entry_string)
+
+    def get_asset(self):
+        return self.asset
 
     def get_name(self):
         return self.entry_string
@@ -97,5 +102,5 @@ class ZipAsset(IAsset):
     def get_entries(self, filter=lambda assset, entry_string: True):
         with zipfile.ZipFile(self.path.__str__()) as z:
             entries=[e.decode(self.encoding) for e in z.namelist() if not e.endswith('/')]
-            return [ZipEntry(e) for e in entries if filter(self, e)]
+            return [ZipEntry(self, e) for e in entries if filter(self, e)]
 

@@ -3,6 +3,7 @@ import re
 import string
 import zipfile
 from ctypes import windll
+from .ientry import IEntry
 
 
 def get_drives():
@@ -60,6 +61,9 @@ class Path(object):
         if pos!=-1:
             return self.path_string[pos:].lower()
 
+    def get_dirname(self):
+        return Path(os.path.dirname(self.path_string))
+
     def get_drive(self):
         return self.drive
 
@@ -81,6 +85,16 @@ class Path(object):
             else:
                 current=current.get_append(e)
             yield current
+
+    def get_asset(self):
+        from .directoryasset import DirectoryAsset
+        from .zipasset import ZipAsset
+        if self.is_dir():
+            return DirectoryAsset(self)
+        elif self.is_zipfile():
+            return ZipAsset(self, 'cp932')
+        else:
+            return DirectoryAsset(self.get_dirname())
 
     @staticmethod
     def pwd():

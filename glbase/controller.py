@@ -6,6 +6,7 @@ import os
 import numpy
 from OpenGL.GL import *
 import glbase
+import glbase.asset
 
 
 VS='''
@@ -137,15 +138,8 @@ class Controller(object):
                 method = getattr(to, name)  
                 setattr(self, name, method)
 
-    def load_model(self, asset_path, entry=None):
-        asset_path=to_unicode(asset_path)
-        entry=to_unicode(entry)
-        if entry:
-            asset=glbase.get_asset(asset_path)
-            entry_string=entry
-        else:
-            asset=glbase.get_asset(os.path.dirname(asset_path))
-            entry_string=os.path.basename(asset_path)
+    def load_model(self, asset, entry_string):
+        assert isinstance(asset, glbase.asset.IAsset)
         self.root=glbase.load_model(asset, entry_string)
         self.is_initialized=False
 

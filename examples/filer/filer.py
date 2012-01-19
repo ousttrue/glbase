@@ -262,7 +262,7 @@ class Viewer(wx.Panel):
     def OnView(self, event):
         path=event.path
         print 'OnView', path.__str__().encode('utf-8')
-        self.controller.load_model(path.__str__())
+        self.controller.load_model(glbase.get_asset(path), path.get_name())
         self.Refresh()
 
 
@@ -329,7 +329,6 @@ if __name__ == '__main__':
 
     frame.viewer.controller.set_projection(glbase.view.PerspectiveProjection())
     frame.viewer.controller.set_view(glbase.view.RokuroView())
-    #frame.viewer.controller.load_model(*sys.argv[1:])
     def callback(keycode):
         if keycode==81: # q
             frame.Destroy()
