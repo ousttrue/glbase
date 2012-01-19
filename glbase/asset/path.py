@@ -71,13 +71,15 @@ class Path(object):
             return Path(os.path.join(self.path_string, e))
 
     def from_root(self):
-        from . import get_asset
+        print 'from_root'
         current=None
         for e in self.path_string.split(u'/'):
-            if current:
-                current=current.get_append(e)
+            if not current:
+                # drive
+                current=Path(u'%s/' % e)
             else:
-                current=Path(e)
+                current=current.get_append(e)
+            print current 
             yield current
 
     @staticmethod
