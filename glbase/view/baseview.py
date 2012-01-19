@@ -12,6 +12,10 @@ class BaseView(object):
         self.isRightDown=False
         self.matrix=numpy.identity(4, 'f')
 
+    def set_size(self, w, h):
+        self.w=w
+        self.h=h
+
     def onLeftDown(self, x, y):
         self.isLeftDown=True
         self.x=x
@@ -44,9 +48,4 @@ class BaseView(object):
 
     def get_matrix(self):
         return self.matrix
-
-    def onShader(self, shader):
-        shader.set_uniform(
-                u_pv_matrix=[self.get_matrix()]
-                )
 

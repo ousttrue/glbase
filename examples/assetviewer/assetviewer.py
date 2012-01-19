@@ -62,6 +62,7 @@ or
     app = wx.App(False)
     frame=Frame(None)
 
+    frame.controller.set_projection(glbase.view.PerspectiveProjection())
     frame.controller.set_view(glbase.view.RokuroView())
     frame.controller.load_model(*sys.argv[1:])
     def callback(keycode):

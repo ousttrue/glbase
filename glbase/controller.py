@@ -3,6 +3,7 @@
 """
 import re
 import os
+import numpy
 from OpenGL.GL import *
 import glbase
 
@@ -54,6 +55,9 @@ class Empty(object):
     def draw(self):
         pass
 
+    def get_matrix(self):
+        return numpy.identity(4, 'f')
+
 
 DELEGATE_PATTERN=re.compile('^on[A-Z]')
 
@@ -61,11 +65,13 @@ DELEGATE_PATTERN=re.compile('^on[A-Z]')
 class Controller(object):
     def __init__(self):
         self.bg=(0.9, 0.5, 0.0, 0.0)
+        self.set_projection(Empty())
         self.set_view(Empty())
         self.set_root(Empty())
         self.is_initialized=False
 
     def onResize(self, w, h):
+        self.projection.set_size(w, h)
         self.view.set_size(w, h)
         glViewport(0, 0, w, h)
 
@@ -98,6 +104,10 @@ class Controller(object):
 
     def onUpdate(self, d):
         print 'onUpdate', d
+
+    def set_projection(self, projection):
+        self.projection=projection
+        self.delegate(self.projection)
 
     def set_view(self, view):
         self.view=view
@@ -136,9 +146,13 @@ class Controller(object):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         with self.shader as s:
             s.set_uniform(
-                    light_direction=[0.0, -1.0, 0.0]
+                    light_direction=[0.0, -1.0, 0.0],
+                    u_pv_matrix=[
+                        numpy.dot(
+                            self.projection.get_matrix(),
+                            self.view.get_matrix())
+                        ]
                     )
-            self.view.onShader(s)
             self.root.onShader(s)
         glFlush()
 
