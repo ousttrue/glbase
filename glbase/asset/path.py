@@ -71,7 +71,6 @@ class Path(object):
             return Path(os.path.join(self.path_string, e))
 
     def from_root(self):
-        print 'from_root'
         current=None
         for e in self.path_string.split(u'/'):
             if not current:
@@ -79,7 +78,6 @@ class Path(object):
                 current=Path(u'%s/' % e)
             else:
                 current=current.get_append(e)
-            print current 
             yield current
 
     @staticmethod

@@ -212,13 +212,13 @@ class FileList(wx.ListCtrl):
 
     def OnItemActivated(self, event):
         self.currentItem = event.m_itemIndex
-        asset=self.files[event.m_itemIndex]
-        if isinstance(asset, glbase.asset.DirectoryAsset):
-            self.GetEventHandler().ProcessEvent(ChdirEvent(asset))
-        elif isinstance(asset, glbase.asset.ZipAsset):
-            self.GetEventHandler().ProcessEvent(ChdirEvent(asset))
+        path=self.files[event.m_itemIndex]
+        if path.is_dir():
+            self.GetEventHandler().ProcessEvent(ChdirEvent(path))
+        elif path.is_zipfile():
+            self.GetEventHandler().ProcessEvent(ChdirEvent(path))
         else:
-            self.GetEventHandler().ProcessEvent(ViewEvent(asset))
+            self.GetEventHandler().ProcessEvent(ViewEvent(path))
 
     def getColumnText(self, index, col):
         print 'getColumnText'
@@ -294,7 +294,7 @@ class Frame(wx.Frame):
 
     def OnChdir(self, e):
         #print 'OnChdir', e.path
-        self.chdir(e.path)
+        self.chdir(glbase.get_asset(e.path))
 
     def chdir(self, path):
         assert isinstance(path, glbase.asset.IAsset)
