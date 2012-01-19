@@ -1,6 +1,8 @@
 # coding: utf-8
 import zipfile
+import sys
 from .iasset import IAsset
+from .path import Path
 
 
 '''
@@ -54,6 +56,25 @@ class ZipInfo(zipfile.ZipInfo):
 zipfile.ZipInfo=ZipInfo
 
 
+class ZipEntry(object):
+    def __init__(self, entry_string):
+        self.entry_string=entry_string
+
+    def get_name(self):
+        return self.entry_string
+
+    def is_dir(self):
+        return False
+
+    def is_zipfile(self):
+        return False
+
+    def get_extension(self):
+        pos=self.entry_string.rfind(u'.')
+        if pos!=-1:
+            return self.entry_string[pos:].lower()
+
+
 class ZipAsset(IAsset):
     def __init__(self, path, encoding='ascii'):
         assert isinstance(path, Path)
@@ -73,9 +94,8 @@ class ZipAsset(IAsset):
                 print e
                 return False
 
-    def get_entries(self, filter):
+    def get_entries(self, filter=lambda assset, entry_string: True):
         with zipfile.ZipFile(self.path.__str__()) as z:
-            entries=[e.decode(self.encoding) for e in z.namelist()]
-            return [e for e in entries if filter(self, e)]
-
+            entries=[e.decode(self.encoding) for e in z.namelist() if not e.endswith('/')]
+            return [ZipEntry(e) for e in entries if filter(self, e)]
 
